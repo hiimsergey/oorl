@@ -1,5 +1,5 @@
 # oorl
-A tool for opening URLs from text files.
+A tool for opening URLs from text files. A small "script" I made for myself because I need this very often.
 
 ## Usage
 ```
