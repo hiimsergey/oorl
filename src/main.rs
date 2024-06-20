@@ -24,7 +24,7 @@ fn main() {
             "Usage".underline(),
             "path1 path2 path3 ...".green(),
             "or".italic(),
-            "\"string containing urls\"".yellow()
+            "\"string containing URLs\"".yellow()
         );
         process::exit(1);
     }
