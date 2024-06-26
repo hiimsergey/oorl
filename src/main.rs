@@ -16,6 +16,7 @@ fn main() {
     if args.is_empty() {
         println!(
             "{} - A tool for opening URLs from text files
+v0.1.3
 
 {}:\toorl {}
 \t\t{}
