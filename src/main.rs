@@ -1,42 +1,74 @@
+use colored::Colorize;
 use std::{
-    env::args,
+    env, fmt,
     fs::File,
     io::{BufRead, BufReader},
-    process
+    process,
 };
-use colored::Colorize;
 use webbrowser;
 
 fn main() {
-    let args: Vec<String> = args().collect();
+    let mut args_iter = env::args();
+    args_iter.next(); // removes argument "oorl"
+    let args: Vec<String> = args_iter.collect();
     let mut no_such_files = Vec::<&str>::new();
 
-    if args.len() < 2 {
+    if args.is_empty() {
         println!(
-            "{} - A tool for opening URLs from text files\n\n{}: oorl {}",
+            "{} - A tool for opening URLs from text files
+v0.1.3
+
+{}:\toorl {}
+\t\t{}
+\toorl -s {}",
             "oorl".bold(),
             "Usage".underline(),
-            "path1 path2 path3 ...".green()
+            "path1 path2 path3 ...".green(),
+            "or".italic(),
+            "\"string containing URLs\"".yellow()
         );
         process::exit(1);
+    }
+
+    if args[0] == "-s" || args[0] == "--string" {
+        if args.len() == 1 {
+            eprintln!("oorl: input string missing!");
+            process::exit(1);
+        } else {
+            open_urls_from_line(&args[1], "string".green());
+        }
+        process::exit(0);
     }
 
     for path in args.iter() {
         if let Ok(file) = File::open(path) {
             for line in BufReader::new(file).lines().filter_map(|line| line.ok()) {
-                for url in line
-                    .split_whitespace()
-                    .filter(|s| s.starts_with("http://") || s.starts_with("https://"))
-                {
-                    let _ = webbrowser::open(url);
-                    println!("{path}: {}", url.yellow());
-                }
+                open_urls_from_line(&line, path);
             }
-        } else { no_such_files.push(path); }
+        } else {
+            no_such_files.push(path);
+        }
     }
 
     if !no_such_files.is_empty() {
-        eprintln!("No such files: {}", no_such_files.join(", ").red());
+        eprintln!("oorl: no such files: {}", no_such_files.join(", ").red());
         process::exit(1);
+    }
+}
+
+/// Opens every valid URL it can find in a given string slice line
+fn open_urls_from_line(line: &str, path: impl fmt::Display) {
+    for word in line.split_whitespace() {
+        if webbrowser::open(
+            // Removes possible backslashes, e.g. occuring in LaTeX source files
+            word.chars()
+                .filter(|c| *c != '\\')
+                .collect::<String>()
+                .as_str(),
+        )
+        .is_ok()
+        {
+            println!("{path}: {}", word.yellow());
+        }
     }
 }
