@@ -22,6 +22,17 @@ path3: https://yet_another_example1.com
 path3: https://yet_another_example2.com
 ```
 
+### last URL
+```
+$ oorl -l path
+```
+
+A bit specific but useful for if you want to visit the repository of the project you're in:
+
+```
+$ oorl -l .git/info
+```
+
 ### from argument
 ```
 $ oorl -s "https://example1.com       https://example2.com
