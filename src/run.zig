@@ -28,9 +28,9 @@ const Tracker = struct {
 	const TrackerFn = fn (*Tracker, []const u8) void;
 
 	// TODO USE
-	fn deinit(self: *Tracker, allocator: std.mem.Allocator) void {
-		self.firsts.deinit(allocator);
-		self.lasts.deinit(allocator);
+	fn deinit(self: *Tracker, gpa: std.mem.Allocator) void {
+		self.firsts.deinit(gpa);
+		self.lasts.deinit(gpa);
 	}
 
 	// TODO ADD method to initialize containers and assign the functions below
@@ -66,10 +66,7 @@ const Iterator = struct {
 		return self.vtable.next(self);
 	}
 
-	fn run(self: *Iterator, allocator: std.mem.Allocator, tracker: *Tracker) !void {
-		var firsts: ds.HeadBuffer, var lasts: ds.RingBuffer = .{undefined, undefined};
-		const tracking_fn = tracking.get_fn(allocator, options, &firsts, &lasts);
-
+	fn run(self: *Iterator, gpa: std.mem.Allocator, tracker: *Tracker) !void {
 		// TODO NOW PLAN
 		// assign funcptrs here
 		// change function signatures of funcptrs so that spawn() can be properly used
@@ -112,47 +109,47 @@ const START = switch (builtin.os.tag) {
 	else => @compileError("Unsupported operating system!")
 };
 
-pub fn run_args(allocator: std.mem.Allocator, args: [][:0]u8) !void {
+pub fn run_args(gpa: std.mem.Allocator, args: [][:0]u8) !void {
 	var expecting = Expecting.none;
 
 	var tracker = Tracker{};
-	defer tracker.deinit(allocator);
+	defer tracker.deinit(gpa);
 
 	for (args) |arg| switch (expecting) {
 		.first => tracker.options.first = try std.fmt.parseInt(u32, arg, 10),
 		.last => tracker.options.last = try std.fmt.parseInt(u32, arg, 10),
 		.delay => tracker.options.delay = try std.fmt.parseInt(u32, arg, 10),
 		.string => {
-			try run_string(allocator, arg, &tracker);
+			try run_string(gpa, arg, &tracker);
 			expecting = .none;
 		},
 		.input => if (eql_either(arg, "--string", "-s")) { expecting = .string; }
-			else try run_file(allocator, arg, &tracker),
+			else try run_file(gpa, arg, &tracker),
 		.none => if (eql_either(arg, "--first", "-f")) { expecting = .first; }
 			else if (eql_either(arg, "--last", "-l")) { expecting = .last; }
 			else if (eql_either(arg, "--delay", "-d")) { expecting = .delay; }
 			else if (eql_either(arg, "--string", "-s")) { expecting = .string; }
-			else try run_file(allocator, arg, &tracker)
+			else try run_file(gpa, arg, &tracker)
 	};
 }
 
-fn run_string(allocator: std.mem.Allocator, string: []const u8, tracker: *Tracker) !void {
+fn run_string(gpa: std.mem.Allocator, string: []const u8, tracker: *Tracker) !void {
 	const sp = StringProcessor.init(string);
-	try sp.interface.run(allocator, tracker);
+	try sp.interface.run(gpa, tracker);
 	tracker.options = .{};
 }
 
-fn run_file(allocator: std.mem.Allocator, path: []const u8, tracker: *Tracker) !void {
+fn run_file(gpa: std.mem.Allocator, path: []const u8, tracker: *Tracker) !void {
 	var file = try std.fs.cwd().openFile(path, .{ .mode = .read_only });
 	defer file.close();
 	
 	const fp = FileProcessor.init(file);
-	try fp.interface.run(allocator, tracker);
+	try fp.interface.run(gpa, tracker);
 	tracker.options = .{};
 }
 
-fn spawn(allocator: std.mem.Allocator, item: []const u8) void {
-	var child = std.process.Child.init(&.{ START, item }, allocator);
+fn spawn(gpa: std.mem.Allocator, item: []const u8) void {
+	var child = std.process.Child.init(&.{ START, item }, gpa);
 	const term = child.spawnAndWait() catch {
 		log.errln("'{s}': Failed to spawn process!");
 		return;
