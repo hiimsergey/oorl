@@ -38,5 +38,5 @@ fn real_main() !void {
 	defer std.process.argsFree(allocator, args);
 
 	try arguments.validate(args[1..]);
-	try run.run(args[1..]);
+	try run.run_args(args[1..]);
 }

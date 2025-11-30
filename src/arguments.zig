@@ -24,7 +24,7 @@ pub fn validate(args: [][:0]u8) !void {
 
 	for (args) |arg| switch (expecting) {
 		.number => {
-			_ = std.fmt.parseInt(u32, arg, 10) catch |err| {
+			const number = std.fmt.parseInt(u32, arg, 10) catch |err| {
 				log.err(ERROR_STRING_NUMBER, .{});
 				
 				switch (err) {
@@ -35,6 +35,10 @@ pub fn validate(args: [][:0]u8) !void {
 				}
 				return Generic;
 			};
+			if (number == 0) {
+				log.err(ERROR_STRING_NUMBER, .{});
+				log.stderr.interface.print("Number must be greater than zero!\n", .{});
+			}
 			expecting = .input;
 		},
 		.string => expecting = .none,
